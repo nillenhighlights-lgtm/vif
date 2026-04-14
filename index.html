@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIF Store</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #e8f5e9; /* Светло-зеленый фон */
+            color: #2e7d32; /* Темно-зеленый текст (природный вайб) */
+            font-family: 'Helvetica Neue', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .header { font-size: 28px; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(46, 125, 50, 0.1);
+            margin: 10px auto;
+            max-width: 320px;
+            border: 2px solid #a5d6a7;
+            position: relative;
+            user-select: none;
+        }
+        .product-img { font-size: 100px; margin: 20px 0; }
+        .controls { display: flex; justify-content: space-between; align-items: center; margin: 25px 0; }
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:active { background-color: #388e3c; transform: scale(0.95); }
+        .qty-btn { padding: 10px 20px; font-size: 20px; }
+        .qty { font-size: 24px; font-weight: bold; width: 40px; }
+        .swipe-hints { color: #81c784; font-size: 14px; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">🌿 VIF 🌿</div>
+    
+    <div class="card" id="productCard">
+        <div class="product-img" id="productImg">👕</div>
+        <h2 id="productName">Футболка "Лес"</h2>
+        <p style="font-size: 18px; font-weight: bold;" id="productPrice">1500 ₽</p>
+        
+        <div class="controls">
+            <button class="qty-btn" onclick="changeQty(-1)">-</button>
+            <span class="qty" id="qty">1</span>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        
+        <button onclick="order()" style="width: 100%;">Заказать</button>
+        <div class="swipe-hints">⬅️ Листай ➡️</div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Расширяем на весь экран
+
+        // База твоих товаров
+        const products = [
+            { id: 1, name: 'Футболка "Лес"', price: 1500, emoji: '👕' },
+            { id: 2, name: 'Худи "Мох"', price: 3500, emoji: '🧥' },
+            { id: 3, name: 'Лонгслив "Лиана"', price: 2200, emoji: '🥼' }
+        ];
+
+        let currentIndex = 0;
+        let currentQty = 1;
+
+        // Логика свайпов (влево/вправо)
+        let touchstartX = 0;
+        let touchendX = 0;
+
+        document.getElementById('productCard').addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        });
+
+        document.getElementById('productCard').addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchendX < touchstartX - 40) nextProduct(); // Свайп влево
+            if (touchendX > touchstartX + 40) prevProduct(); // Свайп вправо
+        }
+
+        function updateUI() {
+            document.getElementById('productName').innerText = products[currentIndex].name;
+            document.getElementById('productImg').innerText = products[currentIndex].emoji;
+            document.getElementById('productPrice').innerText = `${products[currentIndex].price} ₽`;
+            document.getElementById('qty').innerText = currentQty;
+        }
+
+        function nextProduct() { currentIndex = (currentIndex + 1) % products.length; currentQty = 1; updateUI(); }
+        function prevProduct() { currentIndex = (currentIndex - 1 + products.length) % products.length; currentQty = 1; updateUI(); }
+
+        function changeQty(delta) {
+            currentQty += delta;
+            if (currentQty < 1) currentQty = 1;
+            updateUI();
+        }
+
+        function order() {
+            const orderData = {
+                product: products[currentIndex].name,
+                qty: currentQty,
+                total: products[currentIndex].price * currentQty
+            };
+            // Отправляем данные обратно в бота
+            tg.sendData(JSON.stringify(orderData));
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
